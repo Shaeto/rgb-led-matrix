@@ -1,14 +1,14 @@
 // rgb_led_matrix.sv
-// synthesis VERILOG_INPUT_VERSION SYSTEMVERILOG_2005
 
 `timescale 1 ps / 1 ps
+
 module rgb_led_matrix #(
-           parameter       matrix_width      = 64,
-           parameter       matrix_height     = 32,
-           parameter       num_of_matrices   = 1,
-           parameter       RAM_ADDRESS_WIDTH = 14,
-           parameter       INPUT_CLK_FRQ     = 50000000,
-           parameter[31:0] start_addr        = 32'b00000000000000000000000000000000
+           parameter
+           MATRIX_WIDTH      = 64,
+           MATRIX_HEIGHT     = 32,
+           NUM_OF_MATRICES   = 1,
+           RAM_ADDRESS_WIDTH = 14,
+           INPUT_CLK_FRQ     = 50000000
        ) (
            input  wire        						clk,
            input  wire        						reset_n,
@@ -30,13 +30,12 @@ module rgb_led_matrix #(
            output wire        						led_b1
        );
 
+localparam [31:0] start_addr      = 32'b00000000000000000000000000000000;
+
 reg [RAM_ADDRESS_WIDTH-1:0] r_ram_address;
 assign master_address = r_ram_address;
 
 assign master_byteenable = 8'b11101110;
-
-reg [3:0] r_led_row;
-assign led_row = r_led_row;
 
 reg r_led_r0, r_led_g0, r_led_b0, r_led_r1, r_led_g1, r_led_b1;
 
@@ -56,12 +55,14 @@ reg [$clog2(MATRIX_COLOR_DEPTH)-1:0] color_frame = 0;
 reg [$clog2(MATRIX_PWM_RATE)-1:0] pwm_frame = 0;
 reg [$clog2(MATRIX_PWM_RATE)-1:0] cur_frame = 0;
 reg [$clog2(MATRIX_UPDATE_CLK)-1:0] clk_counter = 0;
-reg [$clog2(matrix_width*num_of_matrices):0] col_number;
-reg [$clog2(matrix_height/2):0] row_number;
+reg [$clog2(MATRIX_WIDTH*NUM_OF_MATRICES):0] col_number;
+reg [$clog2(MATRIX_HEIGHT/2)-1:0] row_number;
+
+assign led_row = row_number;
 
 reg render_en = 0;
 
-typedef enum { matrix_off, matrix_idle, matrix_req_data, matrix_push_data, matrix_latch_data } matrix_state_t;
+typedef enum { matrix_off, matrix_idle, matrix_req_data, matrix_push_data, matrix_begin_latch, matrix_end_latch } matrix_state_t;
 matrix_state_t matrix_state = matrix_idle;
 
 `include "rgb_matrix_lut.sv"
@@ -118,8 +119,6 @@ begin
         col_number <= 0;
         row_number <= 0;
 
-        r_led_row <= 4'b1111;
-
         r_ram_address <= 0;
         master_read <= 1'b0;
 
@@ -142,32 +141,51 @@ begin
             row_number <= 0;
             matrix_state <= matrix_req_data;
         end
+        else
         case (matrix_state)
             matrix_off:
             begin
-                led_oe <= 1'b0;
+                led_oe <= 1'b1;
                 master_read <= 1'b0;
+                matrix_state <= matrix_idle;
             end
             matrix_idle:
             begin
                 // keep it idling
+                led_oe <= 1'b1;
                 master_read <= 1'b0;
+                matrix_state <= matrix_idle;
             end
-            matrix_req_data:
+            matrix_end_latch, matrix_req_data:
             begin
-                master_read <= 1'b1;
-                matrix_state <= matrix_push_data;
+                if (matrix_state == matrix_end_latch)
+                begin
+                    if (row_number == ((MATRIX_HEIGHT / 2) - 1))
+                    begin
+                        matrix_state <= matrix_idle;
+                    end else
+                    begin
+                        row_number <= row_number + 1'b1;
+                        master_read <= 1'b1;
+                        matrix_state <= matrix_push_data;
+                    end
+                end
+                else
+                begin
+                    master_read <= 1'b1;
+                    matrix_state <= matrix_push_data;
+                end
             end
             matrix_push_data:
             begin
                 master_read <= 1'b0;
-                r_led_r0 <= pwm_lut[master_readdata[63:56]][color_frame];
-                r_led_g0 <= pwm_lut[master_readdata[55:48]][color_frame];
-                r_led_b0 <= pwm_lut[master_readdata[47:40]][color_frame];
+                r_led_r0 <= pwm_lut[master_readdata[55:48]][color_frame];
+                r_led_g0 <= pwm_lut[master_readdata[47:40]][color_frame];
+                r_led_b0 <= pwm_lut[master_readdata[39:32]][color_frame];
 
-                r_led_r1 <= pwm_lut[master_readdata[31:24]][color_frame];
-                r_led_g1 <= pwm_lut[master_readdata[23:16]][color_frame];
-                r_led_b1 <= pwm_lut[master_readdata[15:8]][color_frame];
+                r_led_r1 <= pwm_lut[master_readdata[23:16]][color_frame];
+                r_led_g1 <= pwm_lut[master_readdata[15:8]][color_frame];
+                r_led_b1 <= pwm_lut[master_readdata[7:0]][color_frame];
 
                 led_clk <= 1'b1;
 
@@ -175,30 +193,21 @@ begin
 
                 col_number <= col_number + 1'b1;
 
-                if (col_number == (num_of_matrices * matrix_width))
+                if (col_number == (NUM_OF_MATRICES * MATRIX_WIDTH))
                 begin
-                    matrix_state <= matrix_latch_data;
+                    matrix_state <= matrix_begin_latch;
                 end
                 else
                 begin
                     matrix_state <= matrix_req_data;
                 end
             end
-            matrix_latch_data:
+            matrix_begin_latch:
             begin
                 master_read <= 1'b0;
-                row_number <= row_number + 1'b1;
-                r_led_row <= row_number;
                 led_oe <= 1'b1;
                 led_lat <= 1'b1;
-                if (row_number == (matrix_height / 2))
-                begin
-                    matrix_state <= matrix_idle;
-                end
-                else
-                begin
-                    matrix_state <= matrix_req_data;
-                end
+                matrix_state <= matrix_end_latch;
             end
         endcase
     end

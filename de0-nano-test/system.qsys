@@ -70,6 +70,14 @@
          type = "String";
       }
    }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
 }
 ]]></parameter>
  <parameter name="clockCrossingAdapter" value="HANDSHAKE" />
@@ -105,9 +113,11 @@
   <parameter name="resetSynchronousEdges" value="NONE" />
  </module>
  <module name="matrix" kind="rgb_led_matrix" version="1.0" enabled="1">
-  <parameter name="matrix_height" value="32" />
-  <parameter name="matrix_width" value="64" />
-  <parameter name="number_of_matrix" value="1" />
+  <parameter name="INPUT_CLK_FRQ" value="50000000" />
+  <parameter name="MATRIX_HEIGHT" value="32" />
+  <parameter name="MATRIX_WIDTH" value="64" />
+  <parameter name="NUM_OF_MATRICES" value="2" />
+  <parameter name="RAM_ADDRESS_WIDTH" value="14" />
  </module>
  <module
    name="onchip_memory2_0"
@@ -127,7 +137,7 @@
   <parameter name="enPRInitMode" value="false" />
   <parameter name="enableDiffWidth" value="false" />
   <parameter name="initMemContent" value="true" />
-  <parameter name="initializationFileName" value="onchip_mem.hex" />
+  <parameter name="initializationFileName">mif/64_32_h1_v2.mif</parameter>
   <parameter name="instanceID" value="NONE" />
   <parameter name="memorySize" value="16384" />
   <parameter name="readDuringWriteMode" value="DONT_CARE" />
@@ -137,7 +147,7 @@
   <parameter name="singleClockOperation" value="false" />
   <parameter name="slave1Latency" value="1" />
   <parameter name="slave2Latency" value="1" />
-  <parameter name="useNonDefaultInitFile" value="false" />
+  <parameter name="useNonDefaultInitFile" value="true" />
   <parameter name="useShallowMemBlocks" value="false" />
   <parameter name="writable" value="true" />
  </module>
