@@ -35,7 +35,7 @@ localparam [31:0] start_addr      = 32'b00000000000000000000000000000000;
 reg [RAM_ADDRESS_WIDTH-1:0] r_ram_address;
 assign master_address = r_ram_address;
 
-assign master_byteenable = 8'b11101110;
+assign master_byteenable = 8'b11111111;
 
 reg r_led_r0, r_led_g0, r_led_b0, r_led_r1, r_led_g1, r_led_b1;
 

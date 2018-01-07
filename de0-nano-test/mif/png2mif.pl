@@ -16,20 +16,24 @@ my $rows        = int( $matrix_height / 2 );
 my $full_width  = $matrix_width * $h_panels;
 my $full_height = $matrix_height * $v_panels;
 
+my $debug = 0;
+
 sub setPixel {
-    my ( $x, $y, $r, $g, $b ) = @_;
+    my ( $x, $y, $alpha, $r, $g, $b ) = @_;
 
     return if ( $x < 0 || $y < 0 || $x >= $full_width || $y >= $full_height );
 
+    my $px = int( $x / $matrix_width );
     my $py = int( $y / $matrix_height );
     my $dy = $y % $matrix_height;
 
-    my $addr = 4 * ( ( $x + ( $v_panels * ( $y % $rows ) + $py ) * $full_width ) * 2 + ( $dy >= $rows ? 1 : 0 ) );
-
+    my $addr = 4 * ((($px * $matrix_width) + ($py * $full_width) + ($dy % $rows) * $full_width * 2 + $x) * 2 + ( ($dy >= $rows) ? 1 : 0 ) );
+#    print "$x, $y -> $addr\n" if $debug;
+    my $a = (1.0 - $alpha / 127.0);
     $data[ $addr + 0 ] = 0;
-    $data[ $addr + 1 ] = $r;
-    $data[ $addr + 2 ] = $g;
-    $data[ $addr + 3 ] = $b;
+    $data[ $addr + 1 ] = int($r * $a);
+    $data[ $addr + 2 ] = int($g * $a);
+    $data[ $addr + 3 ] = int($b * $a);
 }
 
 sub mif {
@@ -94,16 +98,17 @@ my ( $width, $height ) = $image->getBounds();
 
 for ( my $x = 0 ; $x < $full_width ; $x++ ) {
     for ( my $y = 0 ; $y < $full_height ; $y++ ) {
-        setPixel( $x, $y, 0, 0, 0 );
+        setPixel( $x, $y, 127, 0, 0, 0 );
     }
 }
-
+$debug = 1;
 my $wx = ( $full_width - $width ) / 2;
-for ( my $x = 0 ; $x < $width ; $x++ ) {
-    for ( my $y = 0 ; $y < $height ; $y++ ) {
+for ( my $y = 0 ; $y < $height ; $y++ ) {
+    for ( my $x = 0 ; $x < $width ; $x++ ) {
         my $index = $image->getPixel( $x, $y );
         my ( $r, $g, $b ) = $image->rgb($index);
-        setPixel( $wx + $x, $y, $r, $g, $b );
+        my ($alpha) = $image->alpha($index);
+        setPixel( $wx + $x, $y, $alpha, $r, $g, $b );
     }
 }
 $image = undef;
