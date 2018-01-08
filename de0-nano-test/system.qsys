@@ -137,7 +137,7 @@
   <parameter name="enPRInitMode" value="false" />
   <parameter name="enableDiffWidth" value="false" />
   <parameter name="initMemContent" value="true" />
-  <parameter name="initializationFileName">D:/git/rgb-led-matrix/de0-nano-test/mif/test.mif</parameter>
+  <parameter name="initializationFileName">mif/test.mif</parameter>
   <parameter name="instanceID" value="NONE" />
   <parameter name="memorySize" value="16384" />
   <parameter name="readDuringWriteMode" value="DONT_CARE" />

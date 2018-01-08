@@ -27,7 +27,8 @@ sub setPixel {
     my $py = int( $y / $matrix_height );
     my $dy = $y % $matrix_height;
 
-    my $addr = 4 * ((($px * $matrix_width) + ($py * $full_width) + ($dy % $rows) * $full_width * 2 + $x) * 2 + ( ($dy >= $rows) ? 1 : 0 ) );
+#    my $addr = 4 * ((($px * $matrix_width) + ($py * $full_width) + ($dy % $rows) * $full_width * 2 + $x) * 2 + ( ($dy >= $rows) ? 1 : 0 ) );
+    my $addr = 4 * (($x + $py * $full_width + ($dy % $rows) * $v_panels * $full_width) * 2 + ( ($dy >= $rows) ? 1 : 0 ) );
 #    print "$x, $y -> $addr\n" if $debug;
     my $a = (1.0 - $alpha / 127.0);
     $data[ $addr + 0 ] = 0;
